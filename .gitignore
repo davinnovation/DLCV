@@ -1,7 +1,7 @@
 #python
 .pyc
 __pycache__
-.solver
+.swp
 
 #mac
 .DS_store
