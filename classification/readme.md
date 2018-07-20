@@ -6,6 +6,7 @@
 
 ## VGG16
 * paper: [VERY DEEP CONVOLUTIONAL NETWORKS FOR LARGE-SCALE IMAGE RECOGNITION](https://arxiv.org/pdf/1409.1556)
+* original / batchnorm
 
 **usage**
 ```console
