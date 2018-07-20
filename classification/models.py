@@ -13,12 +13,12 @@ class VGG16(nn.Module):
             num_repeat = 2 if i<2 else 3
             for j in range(num_repeat):
                 in_channels = before_channels if j==0 else current_channels
-                out_channels = current_channels
-                layers.append(nn.Conv2d(in_channels = in_channels, out_channels = current_channels, kernel_size = 3, stride = 1, padding = 1, bias = True))
+                out_channels = int(current_channels)
+                layers.append(nn.Conv2d(in_channels = in_channels, out_channels = out_channels, kernel_size = 3, stride = 1, padding = 1, bias = True))
                 layers.append(nn.ReLU())
             layers.append(nn.MaxPool2d(kernel_size=2, stride=2))
-            befor_channels = current_channels
-            current_channels /= 2
+            before_channels = current_channels
+            current_channels *= 2
         self.encoder = nn.Sequential(*layers)
         self.classifier = nn.Sequential(
                             nn.Linear(7*7*512,4096),
@@ -43,8 +43,8 @@ class VGG16bn(nn.Module):
             num_repeat = 2 if i<2 else 3
             for j in range(num_repeat):
                 in_channels= before_channels if j==0 else current_channels
-                out_channels = current_channels
-                layers.append(nn.Conv2d(in_channels = before_channesl, out_channels = current_channels, kernel_size = 3, stride = 1, padding = 1, bias = False))
+                out_channels = int(current_channels)
+                layers.append(nn.Conv2d(in_channels = before_channesl, out_channels = out_channels, kernel_size = 3, stride = 1, padding = 1, bias = False))
                 layers.append(nn.BatchNorm2d(out_channels))
                 layers.append(nn.ReLU())
             layers.append(nn.MaxPool2d(kernel_size = 2, stride = 2))
