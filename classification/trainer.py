@@ -1,11 +1,13 @@
 import torch
 from torch import nn
 from torch import optim
+import torch.nn.functional as F
 import json
 import os
 from misc import get_args
 from loader import get_loader
 from models import *
+
 
 class Trainer(object):
     def __init__(self, model, train_loader, eval_loader , config):
@@ -47,6 +49,7 @@ class Trainer(object):
         return optimizer
 
     def get_history(self,config):
+        """making history dictionary variable"""
         history_num = len(os.listdir(self.config.log_path))
         history = {}
         history['name']= "history.%02d.json"%history_num
@@ -55,6 +58,8 @@ class Trainer(object):
         return history
 
     def log_history(self,epoch, step, loss, acc, train=True):
+        """printing message and logging the history variable"""
+
         msg = "epoch: %02d | step: %05d | loss: %8f | acc: %5f | type: %s"%(epoch,step,loss,acc,"training" if train else "evaluating")
         print(msg)
         if not epoch in self.history['history']:
@@ -66,21 +71,29 @@ class Trainer(object):
         json.dump(self.history,open(os.path.join(self.config.log_path, self.history['name']),"w"))
 
     def evaluate(self,epoch,step):
+        """
+        evaluate with validation set(eval_loader)
+        validation set is made with ten crops
+        """
+        # dropout off
         self.model.eval()
         if not os.path.exists(self.config.save_root):
             os.mkdir(self.config.save_root)
-        acc = 0
-        n_items = 0
-        mean_loss = 0
-        n_step = 0
+        
+        acc, n_items, mean_loss, n_step = 0, 0, 0, 0
+
         for data, label in self.eval_loader:
             data, label = data.to(self.device), label.to(self.device)
-            logit = self.model(data)
-            loss = self.criterion(logit, label)
-            acc += (torch.argmax(logit, dim=1) == label).sum().item()
+            # data is 5-d Tensor because of 10 crop
+            batch_size, ncrops, nc, nh, nw = data.size()
+            result = self.model(data.view(-1,nc,nh,nw))
+            # average logits, it works better than averaging confidence scores
+            result_avg = result.view(batch_size,ncrops,-1).mean(1)
+            loss = self.criterion(result, label.repeat(10))
+            acc += (torch.argmax(result_avg, dim=1) == label).sum().item()
             n_items += data.size(0)
             mean_loss += loss.item()*data.size(0)
-        mean_loss/=n_items
+        mean_loss/=n_items*10
         acc /= n_items
         self.log_history(epoch,step,mean_loss,acc,train=False)
         if acc > self.history['max_val_acc']:
@@ -141,8 +154,8 @@ if __name__ == '__main__':
         model = AlexNetOriginal()
     elif config.model_name.lower() == 'alexnetbn':
         model = AlexNetBn()
-    elif config.model_name.lower() == 'resnet':
-        model = ResNet18()
+    elif config.model_name.lower() == 'vgg':
+        model = VGG16()
     if config.pretrained_path is not None:
         model.load_state_dict(torch.load(config.pretrained_path))
     trainer = Trainer(model, train_loader, test_loader, config)
