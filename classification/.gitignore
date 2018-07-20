@@ -1,0 +1,11 @@
+#python
+.pyc
+__pycache__
+.solver
+
+#mac
+.DS_store
+
+./data/
+./ckpt/
+./logs/
